@@ -7,7 +7,7 @@ jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
-      - name: Mirror all public repos to Gitee
+      - name: Mirror my own repos to Gitee (forks excluded)
         uses: Yikun/hub-mirror-action@master
         with:
           src: 'github/cyanskye'
@@ -15,5 +15,6 @@ jobs:
           dst_key: ${{ secrets.GITEE_PRIVATE_KEY }}
           dst_token: ${{ secrets.GITEE_TOKEN }}
           account_type: 'user'
+          static_list: 'cyanskye.github.io,cyanskye,xhs-live-replay-downloader,video-compression,funmagicagi,gpt-action,ChatGPT-Pro,n8n-showcase,PicGoPics'
           force_update: true
           debug: true
