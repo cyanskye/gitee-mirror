@@ -1,0 +1,19 @@
+name: Mirror GitHub to Gitee
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mirror all public repos to Gitee
+        uses: Yikun/hub-mirror-action@master
+        with:
+          src: 'github/cyanskye'
+          dst: 'gitee/cyanskye'
+          dst_key: ${{ secrets.GITEE_PRIVATE_KEY }}
+          dst_token: ${{ secrets.GITEE_TOKEN }}
+          account_type: 'user'
+          force_update: true
+          debug: true
