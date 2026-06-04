@@ -15,7 +15,7 @@ jobs:
           dst_key: ${{ secrets.GITEE_PRIVATE_KEY }}
           dst_token: ${{ secrets.GITEE_TOKEN }}
           account_type: 'user'
-          static_list: 'cyanskye.github.io,cyanskye,xhs-live-replay-downloader,video-compression,funmagicagi,gpt-action,ChatGPT-Pro,n8n-showcase,PicGoPics'
+          static_list: 'cyanskye.github.io,cyanskye,xhs-live-replay-downloader,video-compression,funmagicagi,gpt-action,ChatGPT-Pro,n8n-showcase'
           force_update: true
           debug: true
 
@@ -25,7 +25,7 @@ jobs:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: |
           set -u
-          repos="cyanskye.github.io cyanskye xhs-live-replay-downloader video-compression funmagicagi gpt-action ChatGPT-Pro n8n-showcase PicGoPics"
+          repos="cyanskye.github.io cyanskye xhs-live-replay-downloader video-compression funmagicagi gpt-action ChatGPT-Pro n8n-showcase"
           for repo in $repos; do
             code=$(curl -s -o /tmp/gh.json -w "%{http_code}" \
               -H "Authorization: Bearer $GH_TOKEN" \
