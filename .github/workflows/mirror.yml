@@ -1,13 +1,35 @@
 name: Mirror GitHub to Gitee
+
 on:
   schedule:
     - cron: '17 */6 * * *'
   workflow_dispatch:
+
+# 同步范围 = cyanskye 在 GitHub「自己创建(非 fork)的公开仓库」，自动包含未来新建的，
+# 无需手动维护名单。只需在下面 EXCLUDE 点名「不想同步」的仓库（逗号/空格分隔），留空则全同步。
+env:
+  EXCLUDE: "PicGoPics"
+
 jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
-      - name: Mirror my own repos to Gitee (forks excluded)
+      - uses: actions/checkout@v4
+
+      - name: 生成同步名单（动态抓取，无需手改）
+        id: build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LIST=$(python3 scripts/build_list.py)
+          echo "本次将同步: $LIST"
+          if [ -z "$LIST" ]; then
+            echo "::error::生成的名单为空，已中止（防止 hub-mirror-action 在空名单时误同步全部仓库含 fork）"
+            exit 1
+          fi
+          echo "list=$LIST" >> "$GITHUB_OUTPUT"
+
+      - name: 镜像到 Gitee
         uses: Yikun/hub-mirror-action@master
         with:
           src: 'github/cyanskye'
@@ -15,32 +37,30 @@ jobs:
           dst_key: ${{ secrets.GITEE_PRIVATE_KEY }}
           dst_token: ${{ secrets.GITEE_TOKEN }}
           account_type: 'user'
-          static_list: 'cyanskye.github.io,cyanskye,xhs-live-replay-downloader,video-compression,funmagicagi,gpt-action,ChatGPT-Pro,n8n-showcase'
+          static_list: ${{ steps.build.outputs.list }}
           force_update: true
-          debug: true
 
-      - name: Sync visibility GitHub -> Gitee (public stays public, private stays private)
+      - name: 按 GitHub 状态设置 Gitee 公开/私有
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          REPO_LIST: ${{ steps.build.outputs.list }}
         run: |
-          set -u
-          repos="cyanskye.github.io cyanskye xhs-live-replay-downloader video-compression funmagicagi gpt-action ChatGPT-Pro n8n-showcase"
-          for repo in $repos; do
+          IFS=',' read -ra repos <<< "$REPO_LIST"
+          for repo in "${repos[@]}"; do
+            [ -z "$repo" ] && continue
             code=$(curl -s -o /tmp/gh.json -w "%{http_code}" \
               -H "Authorization: Bearer $GH_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
               "https://api.github.com/repos/cyanskye/$repo")
             if [ "$code" = "200" ]; then
               priv=$(python3 -c "import json;print('true' if json.load(open('/tmp/gh.json')).get('private') else 'false')")
             else
-              # 在 GitHub 上看不到（私有/不存在）-> 安全起见 Gitee 端保持私有
-              priv=true
+              priv=true   # 在 GitHub 看不到（私有/不存在）-> Gitee 端保持私有
             fi
             http=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH \
               "https://gitee.com/api/v5/repos/cyanskye/$repo" \
               --data-urlencode "access_token=$GITEE_TOKEN" \
               --data-urlencode "name=$repo" \
               --data-urlencode "private=$priv")
-            echo "$repo : github_http=$code -> set gitee private=$priv (patch_http=$http)"
+            echo "$repo -> set gitee private=$priv (patch_http=$http)"
           done
