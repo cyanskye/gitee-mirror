@@ -1,0 +1,17 @@
+name: Cleanup leaked forks on Gitee (one-off)
+on:
+  workflow_dispatch:
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete the 3 leaked fork repos from Gitee
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          set -u
+          for repo in awesome-n8n-templates Antigravity-Manager agents; do
+            http=$(curl -s -o /tmp/del.json -w "%{http_code}" -X DELETE \
+              "https://gitee.com/api/v5/repos/cyanskye/$repo?access_token=$GITEE_TOKEN")
+            echo "DELETE cyanskye/$repo -> HTTP $http  (204=已删, 404=本就不存在)"
+          done
