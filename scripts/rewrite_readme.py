@@ -50,8 +50,9 @@ def rewrite(text):
                   rf"gitee.com/{USER}/\1/raw/", text)
     # SSH clone: git@github.com:USER/ -> git@gitee.com:USER/
     text = text.replace(f"git@github.com:{USER}/", f"git@gitee.com:{USER}/")
-    # https 链接 / clone: github.com/USER/ -> gitee.com/USER/
-    text = re.sub(rf"github\.com/{re.escape(USER)}/", f"gitee.com/{USER}/", text)
+    # https 链接 / clone / 主页：github.com/USER -> gitee.com/USER
+    # 用边界 (?![\w-]) 同时覆盖 .../USER/仓库 和裸主页 .../USER，且不会误伤 USER2 这类别的用户
+    text = re.sub(rf"github\.com/{re.escape(USER)}(?![\w-])", f"gitee.com/{USER}", text)
     return text, text != orig
 
 
