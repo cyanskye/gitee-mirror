@@ -64,3 +64,9 @@ jobs:
               --data-urlencode "private=$priv")
             echo "$repo -> set gitee private=$priv (patch_http=$http)"
           done
+
+      - name: 改写 README 中的 GitHub 地址为 Gitee（仅作者自己仓库）
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          REPO_LIST: ${{ steps.build.outputs.list }}
+        run: python3 scripts/rewrite_readme.py
