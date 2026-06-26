@@ -30,7 +30,7 @@ jobs:
           echo "list=$LIST" >> "$GITHUB_OUTPUT"
 
       - name: 镜像到 Gitee
-        uses: Yikun/hub-mirror-action@master
+        uses: Yikun/hub-mirror-action@v1
         with:
           src: 'github/cyanskye'
           dst: 'gitee/cyanskye'
