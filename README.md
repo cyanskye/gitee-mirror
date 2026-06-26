@@ -18,7 +18,7 @@
 │     GitHub API → 抓取名下非 fork 公开仓库 → 去重排序       │
 ├─────────────────────────────────────────────────────┤
 │  2. 镜像到 Gitee                                      │
-│     hub-mirror-action → clone + force push 到 Gitee   │
+│     git clone + Gitee API 建仓 + git push --mirror     │
 ├─────────────────────────────────────────────────────┤
 │  3. 同步公开/私有状态                                   │
 │     查 GitHub 仓库可见性 → PATCH Gitee 仓库设置          │
@@ -83,7 +83,8 @@ gh workflow run mirror.yml --repo <你的用户名>/gitee-mirror
 
 ## 注意事项
 
-- `force_update=true`，**请勿在 Gitee 端直接改代码**（会被覆盖）
+- 使用 `git push --mirror --force`，**请勿在 Gitee 端直接改代码**（会被覆盖）
+- **零外部 Action 依赖**，镜像逻辑完全自控，不会因第三方 Action 更新而挂掉
 - 只同步你自己创建的公开仓库，fork 和私有仓库自动跳过
 - README 改写只处理你自己命名空间下的链接，不会误改指向第三方的 GitHub 地址
 

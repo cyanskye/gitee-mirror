@@ -29,16 +29,53 @@ jobs:
           fi
           echo "list=$LIST" >> "$GITHUB_OUTPUT"
 
-      - name: 镜像到 Gitee
-        uses: Yikun/hub-mirror-action@v1
-        with:
-          src: 'github/cyanskye'
-          dst: 'gitee/cyanskye'
-          dst_key: ${{ secrets.GITEE_PRIVATE_KEY }}
-          dst_token: ${{ secrets.GITEE_TOKEN }}
-          account_type: 'user'
-          static_list: ${{ steps.build.outputs.list }}
-          force_update: true
+      - name: 镜像到 Gitee（git clone + force push，不依赖第三方 Action）
+        env:
+          GITEE_PRIVATE_KEY: ${{ secrets.GITEE_PRIVATE_KEY }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          REPO_LIST: ${{ steps.build.outputs.list }}
+        run: |
+          # 配置 SSH 密钥
+          mkdir -p ~/.ssh
+          echo "$GITEE_PRIVATE_KEY" > ~/.ssh/gitee_key
+          chmod 600 ~/.ssh/gitee_key
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/gitee_key -o StrictHostKeyChecking=accept-new"
+
+          IFS=',' read -ra repos <<< "$REPO_LIST"
+          failed=""
+          for repo in "${repos[@]}"; do
+            [ -z "$repo" ] && continue
+            echo "=== $repo ==="
+
+            # 1. 从 GitHub clone bare 仓库
+            cachedir="/tmp/mirror-cache/$repo"
+            rm -rf "$cachedir"
+            git clone --bare "https://github.com/cyanskye/$repo.git" "$cachedir" || {
+              echo "  ❌ clone 失败"; failed="$failed $repo"; continue
+            }
+
+            # 2. 确保 Gitee 仓库存在
+            gitee_status=$(curl -s -o /dev/null -w "%{http_code}" \
+              "https://gitee.com/api/v5/repos/cyanskye/$repo?access_token=$GITEE_TOKEN")
+            if [ "$gitee_status" = "404" ]; then
+              create_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+                "https://gitee.com/api/v5/repos" \
+                --data-urlencode "access_token=$GITEE_TOKEN" \
+                --data-urlencode "name=$repo")
+              echo "  创建 Gitee 仓库: HTTP $create_code"
+            fi
+
+            # 3. Force push 到 Gitee
+            cd "$cachedir"
+            git push --mirror "git@gitee.com:cyanskye/$repo.git" --force && echo "  ✅" || {
+              echo "  ❌ push 失败"; failed="$failed $repo"
+            }
+          done
+
+          if [ -n "$failed" ]; then
+            echo "::error::同步失败:$failed"
+            exit 1
+          fi
 
       - name: 按 GitHub 状态设置 Gitee 公开/私有
         env:
