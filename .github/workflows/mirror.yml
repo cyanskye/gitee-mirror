@@ -8,7 +8,7 @@ on:
 # 同步范围 = cyanskye 在 GitHub「自己创建(非 fork)的公开仓库」，自动包含未来新建的，
 # 无需手动维护名单。只需在下面 EXCLUDE 点名「不想同步」的仓库（逗号/空格分隔），留空则全同步。
 env:
-  EXCLUDE: "PicGoPics"
+  EXCLUDE: "PicGoPics, gitee-mirror"
 
 jobs:
   mirror:
